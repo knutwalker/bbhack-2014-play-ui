@@ -15,13 +15,17 @@ abstract class BBHack(val maxK: Int, val bucketSize: Int, val hashSize: Int) ext
 with HeavyHitters with CMSketch with Hashings {
   this: TweetProvider =>
 
+  def doACount(s: String) = {
+    insert(s)
+    sketchCount(s)
+  }
+
   def handleException(exception: Throwable): Unit = exception.printStackTrace()
 
   def onTweet(tweet: bbuzz.Tweet): Unit = {
-    Some(tweet.getHashtagEntities.map(_.getText)).getOrElse(Array()).foreach { ht =>
-      insert(ht)
-      sketchCount(ht)
-    }
+//    Some(tweet.getUser).map(_.getScreenName).foreach(doACount)
+//    Some(tweet.getUserMentionEntities).toList.flatMap(_.map(_.getScreenName).toList).foreach(doACount)
+    Some(tweet.getHashtagEntities.map(_.getText)).getOrElse(Array()).filterNot(_.toLowerCase == "rt").foreach(doACount)
   }
 }
 

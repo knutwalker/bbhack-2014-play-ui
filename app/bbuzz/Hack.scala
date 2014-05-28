@@ -40,10 +40,6 @@ trait CMSketch {
     if (sum == -1) bucketVal
     else sum min bucketVal
   }
-
-  def printTable() = {
-    table.map(row => row.mkString("[ ", " , ", " ]")).mkString("{ ", " ; ", " }")
-  }
 }
 
 trait HeavyHitters {
