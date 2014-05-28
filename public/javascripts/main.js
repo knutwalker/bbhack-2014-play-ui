@@ -57,7 +57,7 @@ $(function () {
   }
 
 
-  var ws = new WebSocket("ws://localhost:9000/ws");
+  var ws = new WebSocket("ws://" + location.host + "/ws");
   ws.onmessage = _.throttle(function (e) {
 
     JSON.parse(e.data).forEach(function(data, idx) {
