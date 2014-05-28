@@ -37,10 +37,10 @@ trait ZeroMqTweets extends TweetProvider {
   def channel: String
 
 
-  private final lazy val context = ZMQ.context(1)
+  private final lazy val zContext = ZMQ.context(1)
   private final lazy val socket: Socket = {
     val socketUrl = s"tcp://$host:$port"
-    val s = context.socket(ZMQ.SUB)
+    val s = zContext.socket(ZMQ.SUB)
     s.connect(socketUrl)
     s.subscribe(channel.getBytes(ZMQ.CHARSET))
     s
