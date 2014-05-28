@@ -27,7 +27,7 @@ trait CMSketch {
   def hashSize: Int
 
 
-  private lazy val table: Array[Array[Int]] = Array.fill(hashSize, bucketSize)(0)
+  private lazy val table = Array.fill(hashSize, bucketSize)(0)
 
   def sketchCount(s: String): Unit = (0 until hashSize).foreach { n =>
     val bucket = h(bucketSize, n)(s)
@@ -37,8 +37,7 @@ trait CMSketch {
   def sketchGet(s: String): Int = (0 until hashSize).foldLeft(-1) { (sum, n) =>
     val bucket = h(bucketSize, n)(s)
     val bucketVal = table(n)(bucket)
-    if (sum == -1) bucketVal
-    else sum min bucketVal
+    if (sum == -1) bucketVal else sum min bucketVal
   }
 }
 
