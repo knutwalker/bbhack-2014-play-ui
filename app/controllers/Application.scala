@@ -75,7 +75,7 @@ object Application extends Controller {
 
   implicit val askTimeout = Timeout(1 second)
 
-  val hakker = Akka.system.actorOf(HackActor.props(10, 1000, 3))
+  val hakker = Akka.system.actorOf(HackActor.props(20, 1000, 3))
 
   def index = Action {
     Ok(views.html.index())
@@ -84,7 +84,7 @@ object Application extends Controller {
   def ws = WebSocket.using[String] { request =>
 
     val in = Iteratee.foreach[String](println).map { _ => println("Disconnected") }
-    val out = Enumerator.repeatM(hakker.ask(Summary(5)).mapTo[String])
+    val out = Enumerator.repeatM(hakker.ask(Summary(10)).mapTo[String])
 
     (in, out)
   }

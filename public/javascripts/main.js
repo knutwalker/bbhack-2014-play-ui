@@ -3,7 +3,7 @@ $(function () {
 
   var maximum = container.outerWidth() / 2 || 300;
 
-  var series = Array.apply(null, {length: 5}).map(function() {
+  var series = Array.apply(null, {length: 10}).map(function() {
     return {
       data: [],
       values: [],
