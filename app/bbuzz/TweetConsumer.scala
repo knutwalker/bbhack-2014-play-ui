@@ -60,7 +60,7 @@ abstract class TweetStreaming extends TweetConsumer {
 
   final def main(args: Array[String]) {
     val ts = tweets
-    ts.subscribe(this, ComputationScheduler())
-    ts.toBlockingObservable.foreach(_ => ())
+    ts.subscribeOn(ComputationScheduler()).subscribe(this)
+    ts.toBlocking.foreach(_ => ())
   }
 }

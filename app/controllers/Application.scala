@@ -1,96 +1,26 @@
 package controllers
 
-import akka.actor.{Props, Actor}
-import akka.util.Timeout
-import bbuzz._
-import scala.concurrent.duration._
-import play.api.libs.iteratee.{Enumerator, Iteratee}
-import play.api.libs.json.{JsArray, Json}
-import play.api.mvc._
+import bbuzz.{BBHack, BBHakker, ElasticsearchScanTweets}
+import play.api.mvc.{Controller, Action, WebSocket}
+import play.api.libs.json.JsValue
 
-import scala.concurrent.Future
-
-
-abstract class BBHack(val maxK: Int, val bucketSize: Int, val hashSize: Int) extends TweetStreaming
-with HeavyHitters with CMSketch with Hashings {
-  this: TweetProvider =>
-
-  def doACount(s: String) = {
-    insert(s)
-    sketchCount(s)
-  }
-
-  def handleException(exception: Throwable): Unit = exception.printStackTrace()
-
-  def onTweet(tweet: bbuzz.Tweet): Unit = {
-//    Some(tweet.getUser).map(_.getScreenName).foreach(doACount)
-//    Some(tweet.getUserMentionEntities).toList.flatMap(_.map(_.getScreenName).toList).foreach(doACount)
-    Some(tweet.getHashtagEntities.map(_.getText)).getOrElse(Array()).filterNot(_.toLowerCase == "rt").foreach(doACount)
-  }
-}
-
-trait ZeroMq extends ZeroMqTweets {
-  def host: String = ???
-  def channel: String = "tweet.stream"
-  def port: Int = 5555
-}
 trait Elastic extends ElasticsearchScanTweets {
-  def host: String = ???
-  def port: Int = 80
-  def index: String = "bbuzz-hackday"
+  def host = "localhost"
+  def port = 9200
+  def index = "bbuzz"
 }
-
-class HackActor(maxK: Int, bucketSize: Int, hashSize: Int) extends BBHack(maxK, bucketSize, hashSize) with Actor with Elastic {
-  import HackActor._
-  import context.dispatcher
-
-  implicit val topTagWrites = Json.writes[TopHashTag]
-  val delay = 25 millis
-
-  Future { main(Array()) }
-
-  def summary(top: Int) = topK().take(top).map { case (ht, cnt) => TopHashTag(ht, cnt, sketchGet(ht)) }
-
-  def serialize(xs: List[TopHashTag]) = {
-    Json.stringify(JsArray(xs.map(Json.toJson(_))))
-  }
-
-  def receive = {
-    case Summary(top) =>
-      val result = serialize(summary(top))
-      context.system.scheduler.scheduleOnce(delay, sender, result)
-  }
-}
-
-object HackActor {
-  case class Summary(top: Int)
-  case class TopHashTag(tag: String, topKCount: Int, sketchCount: Int)
-
-  def props(maxK: Int, bucketSize: Int, hashSize: Int) = Props(classOf[HackActor], maxK, bucketSize, hashSize)
-}
-
 
 object Application extends Controller {
-  import HackActor.Summary
+  import BBHakker.TopHashTag
   import play.api.Play.current
-  import play.api.libs.concurrent.Akka
-  import play.api.libs.concurrent.Execution.Implicits._
-  import akka.pattern.ask
 
-  implicit val askTimeout = Timeout(1 second)
-
-  val hakker = Akka.system.actorOf(HackActor.props(20, 1000, 3))
+  def smData = new BBHack(maxK = 100, bucketSize = 10000, hashSize = 15) with Elastic
 
   def index = Action {
     Ok(views.html.index())
   }
 
-  def ws = WebSocket.using[String] { request =>
-
-    val in = Iteratee.foreach[String](println).map { _ => println("Disconnected") }
-    val out = Enumerator.repeatM(hakker.ask(Summary(10)).mapTo[String])
-
-    (in, out)
+  def ws = WebSocket.acceptWithActor[String, JsValue] { request => out =>
+    BBHakker.props(out, smData, 10)
   }
-
 }
